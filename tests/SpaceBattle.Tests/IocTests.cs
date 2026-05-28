@@ -29,4 +29,33 @@ public sealed class IocTests : IDisposable
 
         Assert.IsType<MoveCommand>(command);
     }
+
+    [Fact]
+    public void ResolveThrowsWhenDependencyIsNotRegistered()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            Ioc.Resolve<ICommand>("Unknown.Dependency")
+        );
+    }
+
+    [Fact]
+    public void ResolveThrowsWhenRegisteredFactoryReturnsWrongType()
+{
+    Ioc.Register("Wrong.Type", _ => new object());
+
+    Assert.Throws<InvalidCastException>(() =>
+        Ioc.Resolve<ICommand>("Wrong.Type")
+    );
+}
+
+    [Fact]
+    public void RegisterReplacesExistingDependency()
+    {
+        Ioc.Register("Test.Dependency", _ => "first");
+        Ioc.Register("Test.Dependency", _ => "second");
+
+        var result = Ioc.Resolve<string>("Test.Dependency");
+
+        Assert.Equal("second", result);
+    }
 }
