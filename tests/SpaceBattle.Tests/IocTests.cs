@@ -46,6 +46,22 @@ public sealed class IocTests : IDisposable
     }
 
     [Fact]
+    public void RegisterMacroDependencyAllowsResolvingMacroCommand()
+    {
+        var first = Mock.Of<ICommand>();
+        var second = Mock.Of<ICommand>();
+
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Macro",
+            new[] { first, second }
+        );
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
     public void ResolveThrowsWhenDependencyIsNotRegistered()
     {
         Assert.Throws<InvalidOperationException>(() =>
@@ -72,5 +88,131 @@ public sealed class IocTests : IDisposable
         var result = Ioc.Resolve<string>("Test.Dependency");
 
         Assert.Equal("second", result);
+    }
+
+    [Fact]
+    public void RegisterMacroDependencyAllowsResolvingEmptyMacroCommand()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Macro",
+            Array.Empty<ICommand>()
+        );
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
+    public void RegisterMacroDependencyThrowsNullReferenceWhenCommandsArgumentIsNull()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        Assert.Throws<NullReferenceException>(() =>
+            Ioc.Resolve<ICommand>(
+                "Commands.Macro",
+                (ICommand[])null!
+            )
+        );
+    }
+
+    [Fact]
+    public void RegisterThrowsWhenKeyIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            Ioc.Register(null!, _ => new object())
+        );
+    }
+
+    [Fact]
+    public void RegisterThrowsWhenKeyIsEmpty()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            Ioc.Register("", _ => new object())
+        );
+    }
+
+    [Fact]
+    public void RegisterThrowsWhenDependencyIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            Ioc.Register("Test.Dependency", null!)
+        );
+    }
+
+    [Fact]
+    public void ResolveThrowsWhenKeyIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            Ioc.Resolve(null!)
+        );
+    }
+	
+    [Fact]
+    public void RegisterMacroDependencyAllowsResolvingMacroCommandFromSeparateArguments()
+    {
+        var first = Mock.Of<ICommand>();
+        var second = Mock.Of<ICommand>();
+
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Macro",
+            first,
+            second
+        );
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
+    public void ResolveThrowsWhenKeyIsEmpty()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            Ioc.Resolve("")
+        );
+    }
+
+    [Fact]
+    public void ResolveThrowsWhenKeyIsWhiteSpace()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            Ioc.Resolve("   ")
+        );
+    }
+
+    [Fact]
+    public void RegisterThrowsWhenKeyIsWhiteSpace()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            Ioc.Register("   ", _ => new object())
+        );
+    }
+
+    [Fact]
+    public void RegisterMacroDependencyThrowsWhenSingleArgumentIsNotCommandArray()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        Assert.Throws<InvalidCastException>(() =>
+            Ioc.Resolve<ICommand>(
+                "Commands.Macro",
+                new object()
+            )
+        );
+    }
+
+    [Fact]
+    public void RegisterMacroDependencyThrowsWhenArgumentsContainNonCommand()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        Assert.Throws<InvalidCastException>(() =>
+            Ioc.Resolve<ICommand>(
+                "Commands.Macro",
+                Mock.Of<ICommand>(),
+                new object()
+            )
+        );
     }
 }
