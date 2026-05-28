@@ -6,93 +6,98 @@ namespace SpaceBattle.Tests;
 public sealed class CommandTests
 {
     [Fact]
-    public void MacroCommandExecutesAllCommandsInOrder()
+    public void MacroCommandExecutesAllCommands()
     {
         var first = new Mock<ICommand>();
         var second = new Mock<ICommand>();
-        var sequence = new MockSequence();
 
-        first.InSequence(sequence).Setup(x => x.Execute());
-        second.InSequence(sequence).Setup(x => x.Execute());
-
-        var command = new MacroCommand(new[] { first.Object, second.Object });
-
-        command.Execute();
+        new MacroCommand(first.Object, second.Object).Execute();
 
         first.Verify(x => x.Execute(), Times.Once);
         second.Verify(x => x.Execute(), Times.Once);
     }
 
     [Fact]
-    public void MacroCommandThrowsAndStopsWhenCommandThrows()
+    public void MacroCommandStopsAndThrowsWhenCommandThrows()
     {
         var first = new Mock<ICommand>();
         var second = new Mock<ICommand>();
 
         first.Setup(x => x.Execute()).Throws<InvalidOperationException>();
 
-        var command = new MacroCommand(new[] { first.Object, second.Object });
+        Assert.Throws<InvalidOperationException>(() =>
+            new MacroCommand(first.Object, second.Object).Execute()
+        );
 
-        Assert.Throws<InvalidOperationException>(() => command.Execute());
-
-        first.Verify(x => x.Execute(), Times.Once);
         second.Verify(x => x.Execute(), Times.Never);
     }
 
     [Fact]
-    public void MacroCommandConstructorThrowsWhenCommandsIsNull()
+    public void MacroCommand_Constructor_Throws_WhenCommandsIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new MacroCommand(null!));
+        Assert.Throws<ArgumentNullException>(() =>
+            new MacroCommand(null!)
+        );
     }
 
     [Fact]
-    public void MacroCommandThrowsWhenCommandInListIsNull()
+    public void SendCommandPassesCommandToReceiver()
     {
-    var command = new MacroCommand(new ICommand[] { null! });
+        var longCommand = new Mock<ICommand>();
+        var receiver = new Mock<ICommandReceiver>();
 
-    Assert.Throws<NullReferenceException>(() => command.Execute());
+        new SendCommand(longCommand.Object, receiver.Object).Execute();
+
+        receiver.Verify(x => x.Receive(longCommand.Object), Times.Once);
     }
 
     [Fact]
-    public void MacroCommandWithEmptyCommandListDoesNothing()
+    public void SendCommandThrowsWhenReceiverCannotAcceptCommand()
     {
-        var command = new MacroCommand(Array.Empty<ICommand>());
+        var receiver = new Mock<ICommandReceiver>();
 
-        command.Execute();
+        receiver
+            .Setup(x => x.Receive(It.IsAny<ICommand>()))
+            .Throws<InvalidOperationException>();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new SendCommand(Mock.Of<ICommand>(), receiver.Object).Execute()
+        );
     }
 
     [Fact]
-    public void MacroCommandExecutesSingleCommand()
+    public void SendCommand_Constructor_Throws_WhenCommandIsNull()
     {
-        var inner = new Mock<ICommand>();
+        var receiver = new Mock<ICommandReceiver>();
 
-        var command = new MacroCommand(new[] { inner.Object });
-
-        command.Execute();
-
-        inner.Verify(x => x.Execute(), Times.Once);
+        Assert.Throws<ArgumentNullException>(() =>
+            new SendCommand(null!, receiver.Object)
+        );
     }
 
     [Fact]
-    public void MacroCommandStopsOnSecondCommandException()
+    public void SendCommand_Constructor_Throws_WhenReceiverIsNull()
     {
-        var first = new Mock<ICommand>();
-        var second = new Mock<ICommand>();
-        var third = new Mock<ICommand>();
+        var innerCommand = new Mock<ICommand>();
 
-        second.Setup(x => x.Execute()).Throws<InvalidOperationException>();
+        Assert.Throws<ArgumentNullException>(() =>
+            new SendCommand(innerCommand.Object, null!)
+        );
+    }
 
-        var command = new MacroCommand(new[]
-        {
-            first.Object,
-            second.Object,
-            third.Object
-        });
+    [Fact]
+    public void MoveCommand_Constructor_Throws_WhenMovingObjectIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            new MoveCommand(null!)
+        );
+    }
 
-        Assert.Throws<InvalidOperationException>(() => command.Execute());
-
-        first.Verify(x => x.Execute(), Times.Once);
-        second.Verify(x => x.Execute(), Times.Once);
-        third.Verify(x => x.Execute(), Times.Never);
+    [Fact]
+    public void RotateCommand_Constructor_Throws_WhenRotatingObjectIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            new RotateCommand(null!)
+        );
     }
 }
