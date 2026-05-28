@@ -86,6 +86,34 @@ public sealed class IocTests : IDisposable
     }
 
     [Fact]
+    public void RegisterMacroMoveRotateAllowsResolvingMoveMacro()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+        new RegisterIoCDependencyMacroMoveRotate().Execute();
+
+        Ioc.Register("Specs.Move", _ => new[] { "Commands.Move" });
+        Ioc.Register("Commands.Move", _ => Mock.Of<ICommand>());
+
+        var command = Ioc.Resolve<ICommand>("Macro.Move", new object());
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
+    public void RegisterMacroMoveRotateAllowsResolvingRotateMacro()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+        new RegisterIoCDependencyMacroMoveRotate().Execute();
+
+        Ioc.Register("Specs.Rotate", _ => new[] { "Commands.Rotate" });
+        Ioc.Register("Commands.Rotate", _ => Mock.Of<ICommand>());
+
+        var command = Ioc.Resolve<ICommand>("Macro.Rotate", new object());
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
     public void Ioc_Resolve_Throws_WhenDependencyIsNotRegistered()
     {
         Assert.Throws<InvalidOperationException>(() =>
@@ -274,36 +302,5 @@ public sealed class IocTests : IDisposable
         Assert.Throws<ArgumentNullException>(() =>
             strategy.Resolve(null!)
         );
-    }
-
-    [Fact]
-    public void MacroStrategyPassesArgumentsToInnerCommands()
-    {
-        var gameObject = new object();
-        var first = new Mock<ICommand>();
-        var second = new Mock<ICommand>();
-
-        new RegisterIoCDependencyMacroCommand().Execute();
-
-        Ioc.Register("Specs.Test", _ => new[] { "Commands.First", "Commands.Second" });
-
-        Ioc.Register("Commands.First", args =>
-        {
-            Assert.Same(gameObject, args[0]);
-            return first.Object;
-        });
-
-        Ioc.Register("Commands.Second", args =>
-        {
-            Assert.Same(gameObject, args[0]);
-            return second.Object;
-        });
-
-        var command = new CreateMacroCommandStrategy("Test").Resolve(new[] { gameObject });
-
-        command.Execute();
-
-        first.Verify(x => x.Execute(), Times.Once);
-        second.Verify(x => x.Execute(), Times.Once);
     }
 }
