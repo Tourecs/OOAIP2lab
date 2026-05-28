@@ -19,9 +19,13 @@ public sealed class IocTests : IDisposable
     public void RegisterMoveDependencyAllowsResolvingMoveCommand()
     {
         Ioc.Register("Adapters.IMovingObject", _ => Mock.Of<IMovingObject>());
+
         new RegisterIoCDependencyMoveCommand().Execute();
 
-        var command = Ioc.Resolve<ICommand>("Commands.Move", new Dictionary<string, object>());
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Move",
+            new Dictionary<string, object>()
+        );
 
         Assert.IsType<MoveCommand>(command);
     }
@@ -30,9 +34,13 @@ public sealed class IocTests : IDisposable
     public void RegisterRotateDependencyAllowsResolvingRotateCommand()
     {
         Ioc.Register("Adapters.IRotatingObject", _ => Mock.Of<IRotatingObject>());
+
         new RegisterIoCDependencyRotateCommand().Execute();
 
-        var command = Ioc.Resolve<ICommand>("Commands.Rotate", new Dictionary<string, object>());
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Rotate",
+            new Dictionary<string, object>()
+        );
 
         Assert.IsType<RotateCommand>(command);
     }
@@ -42,9 +50,123 @@ public sealed class IocTests : IDisposable
     {
         new RegisterIoCDependencyMacroCommand().Execute();
 
-        var command = Ioc.Resolve<ICommand>("Commands.Macro", Array.Empty<ICommand>());
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Macro",
+            Array.Empty<ICommand>()
+        );
 
         Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
+    public void RegisterMacroMoveRotateAllowsResolvingMoveMacro()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+        new RegisterIoCDependencyMacroMoveRotate().Execute();
+
+        Ioc.Register("Specs.Move", _ => new[] { "Commands.Move" });
+        Ioc.Register("Commands.Move", _ => Mock.Of<ICommand>());
+
+        var command = Ioc.Resolve<ICommand>(
+            "Macro.Move",
+            new object()
+        );
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
+    public void RegisterMacroMoveRotateAllowsResolvingRotateMacro()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+        new RegisterIoCDependencyMacroMoveRotate().Execute();
+
+        Ioc.Register("Specs.Rotate", _ => new[] { "Commands.Rotate" });
+        Ioc.Register("Commands.Rotate", _ => Mock.Of<ICommand>());
+
+        var command = Ioc.Resolve<ICommand>(
+            "Macro.Rotate",
+            new object()
+        );
+
+        Assert.IsType<MacroCommand>(command);
+    }
+
+    [Fact]
+    public void RegisterSendDependencyAllowsResolvingSendCommand()
+    {
+        new RegisterIoCDependencySendCommand().Execute();
+
+        var innerCommand = Mock.Of<ICommand>();
+        var receiver = Mock.Of<ICommandReceiver>();
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Send",
+            innerCommand,
+            receiver
+        );
+
+        Assert.IsType<SendCommand>(command);
+    }
+
+    [Fact]
+    public void RegisterSendDependencyResolvedCommandSendsInnerCommandToReceiver()
+    {
+        new RegisterIoCDependencySendCommand().Execute();
+
+        var innerCommand = Mock.Of<ICommand>();
+        var receiver = new Mock<ICommandReceiver>();
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Send",
+            innerCommand,
+            receiver.Object
+        );
+
+        command.Execute();
+
+        receiver.Verify(x => x.Receive(innerCommand), Times.Once);
+    }
+
+    [Fact]
+    public void RegisterSendDependencyThrowsWhenCommandArgumentIsMissing()
+    {
+        new RegisterIoCDependencySendCommand().Execute();
+
+        Assert.Throws<IndexOutOfRangeException>(() =>
+            Ioc.Resolve<ICommand>(
+                "Commands.Send",
+                Mock.Of<ICommand>()
+            )
+        );
+    }
+
+    [Fact]
+    public void RegisterSendDependencyThrowsWhenFirstArgumentHasWrongType()
+    {
+        new RegisterIoCDependencySendCommand().Execute();
+
+        Assert.Throws<InvalidCastException>(() =>
+            Ioc.Resolve<ICommand>(
+                "Commands.Send",
+                new object(),
+                Mock.Of<ICommandReceiver>()
+            )
+        );
+    }
+
+    [Fact]
+    public void RegisterSendDependencyThrowsWhenSecondArgumentHasWrongType()
+    {
+        new RegisterIoCDependencySendCommand().Execute();
+
+        Assert.Throws<InvalidCastException>(() =>
+            Ioc.Resolve<ICommand>(
+                "Commands.Send",
+                Mock.Of<ICommand>(),
+                new object()
+            )
+        );
     }
 
     [Fact]
@@ -86,84 +208,11 @@ public sealed class IocTests : IDisposable
     }
 
     [Fact]
-    public void RegisterMacroMoveRotateAllowsResolvingMoveMacro()
-    {
-        new RegisterIoCDependencyMacroCommand().Execute();
-        new RegisterIoCDependencyMacroMoveRotate().Execute();
-
-        Ioc.Register("Specs.Move", _ => new[] { "Commands.Move" });
-        Ioc.Register("Commands.Move", _ => Mock.Of<ICommand>());
-
-        var command = Ioc.Resolve<ICommand>("Macro.Move", new object());
-
-        Assert.IsType<MacroCommand>(command);
-    }
-
-    [Fact]
-    public void RegisterMacroMoveRotateAllowsResolvingRotateMacro()
-    {
-        new RegisterIoCDependencyMacroCommand().Execute();
-        new RegisterIoCDependencyMacroMoveRotate().Execute();
-
-        Ioc.Register("Specs.Rotate", _ => new[] { "Commands.Rotate" });
-        Ioc.Register("Commands.Rotate", _ => Mock.Of<ICommand>());
-
-        var command = Ioc.Resolve<ICommand>("Macro.Rotate", new object());
-
-        Assert.IsType<MacroCommand>(command);
-    }
-
-    [Fact]
-    public void Ioc_Resolve_Throws_WhenDependencyIsNotRegistered()
+    public void IocResolveThrowsWhenDependencyIsNotRegistered()
     {
         Assert.Throws<InvalidOperationException>(() =>
             Ioc.Resolve<ICommand>("Unknown.Dependency")
         );
-    }
-
-    [Fact]
-    public void RegisterIoCDependencyMacroCommand_Execute_RegistersDependency_FromParams()
-    {
-        new RegisterIoCDependencyMacroCommand().Execute();
-
-        var first = new Mock<ICommand>();
-        var second = new Mock<ICommand>();
-
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Macro",
-            first.Object,
-            second.Object
-        );
-
-        command.Execute();
-
-        first.Verify(x => x.Execute(), Times.Once);
-        second.Verify(x => x.Execute(), Times.Once);
-    }
-
-    [Fact]
-    public void RegisterIoCDependencyMacroCommand_Execute_RegistersDependency_FromArray()
-    {
-        new RegisterIoCDependencyMacroCommand().Execute();
-
-        var first = new Mock<ICommand>();
-        var second = new Mock<ICommand>();
-
-        var commands = new ICommand[]
-        {
-            first.Object,
-            second.Object
-        };
-
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Macro",
-            commands
-        );
-
-        command.Execute();
-
-        first.Verify(x => x.Execute(), Times.Once);
-        second.Verify(x => x.Execute(), Times.Once);
     }
 
     [Fact]
