@@ -1,0 +1,11 @@
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/bin/Debug/net10.0/OOAIP_3lab.deps.json
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/bin/Debug/net10.0/OOAIP_3lab.dll
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/bin/Debug/net10.0/OOAIP_3lab.pdb
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/OOAIP_3lab.GeneratedMSBuildEditorConfig.editorconfig
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/OOAIP_3lab.AssemblyInfoInputs.cache
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/OOAIP_3lab.AssemblyInfo.cs
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/OOAIP_3lab.csproj.CoreCompileInputs.cache
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/OOAIP_3lab.dll
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/refint/OOAIP_3lab.dll
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/OOAIP_3lab.pdb
+/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/obj/Debug/net10.0/ref/OOAIP_3lab.dll

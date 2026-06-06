@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "OOAIP_3lab/1.0.0": {
+        "runtime": {
+          "OOAIP_3lab.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "OOAIP_3lab/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

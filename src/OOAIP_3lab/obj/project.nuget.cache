@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "zsGP8zvc8YY=",
+  "success": true,
+  "projectFilePath": "/home/ligitin/ooaip/OOAIP_3lab/src/OOAIP_3lab/OOAIP_3lab.csproj",
+  "expectedPackageFiles": [
+    "/home/ligitin/.nuget/packages/microsoft.aspnetcore.app.ref/10.0.8/microsoft.aspnetcore.app.ref.10.0.8.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,78 @@
+using OOAIP_3lab.Commands;
+using OOAIP_3lab.Game;
+using OOAIP_3lab.GameObjects;
+
+namespace OOAIP_3lab;
+
+public sealed class RegisterIoCDependencyPhotonTorpedo : ICommand
+{
+    public void Execute()
+    {
+        Ioc.Register("GameObjects.PhotonTorpedo", args =>
+        {
+            var x = (double)args[0];
+            var y = (double)args[1];
+            var direction = (double)args[2];
+            return new PhotonTorpedo(x, y, direction, 5.0);
+        });
+    }
+}
+
+public sealed class RegisterIoCDependencyAuthorization : ICommand
+{
+    public void Execute()
+    {
+        Ioc.Register("Authorization", _ => new Authorization());
+    }
+}
+
+public sealed class RegisterIoCDependencyGame : ICommand
+{
+    public void Execute()
+    {
+        Ioc.Register("Game.Current", _ => new Game.Game());
+    }
+}
+
+public sealed class RegisterIoCDependencyLaunchPhotonTorpedoCommand : ICommand
+{
+    public void Execute()
+    {
+        Ioc.Register("Commands.LaunchPhotonTorpedo", args =>
+        {
+            var x = (double)args[0];
+            var y = (double)args[1];
+            var direction = (double)args[2];
+            var user = (string)args[3];
+            var token = (string)args[4];
+            return new LaunchPhotonTorpedoCommand(x, y, direction, user, token);
+        });
+    }
+}
+
+public sealed class RegisterIoCDependencyMoveCommand : ICommand
+{
+    public void Execute()
+    {
+        Ioc.Register("Commands.Move", args =>
+        {
+            var gameObject = (IGameObject)args[0];
+            return new MoveCommand(gameObject);
+        });
+    }
+}
+
+public sealed class MoveCommand : ICommand
+{
+    private readonly IGameObject _gameObject;
+
+    public MoveCommand(IGameObject gameObject)
+    {
+        _gameObject = gameObject ?? throw new ArgumentNullException(nameof(gameObject));
+    }
+
+    public void Execute()
+    {
+        _gameObject.Position = _gameObject.Position + _gameObject.Velocity;
+    }
+}
