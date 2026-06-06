@@ -69,11 +69,15 @@ jobs:
 
       - name: Generate coverage report
         if: steps.find_sln.outputs.count != '0'
-        run: >
-          reportgenerator
-          -reports:coverage/coverage.cobertura.xml
-          -targetdir:coverage/report
-          -reporttypes:'MarkdownSummaryGithub;JsonSummary;HtmlInline_AzurePipelines'
+        run: |
+          if [ -f coverage/coverage.cobertura.xml ]; then
+            reportgenerator \
+              -reports:coverage/coverage.cobertura.xml \
+              -targetdir:coverage/report \
+              -reporttypes:'MarkdownSummaryGithub;JsonSummary;HtmlInline_AzurePipelines'
+          else
+            echo "No coverage report found at coverage/coverage.cobertura.xml, skipping report generation."
+          fi
 
       - name: Publish coverage comment
         if: steps.find_sln.outputs.count != '0'
