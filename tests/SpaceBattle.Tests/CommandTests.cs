@@ -86,6 +86,53 @@ public sealed class CommandTests
     }
 
     [Fact]
+    public void CommandInjectableCommand_Execute_ExecutesInjectedCommand()
+    {
+        var innerCommand = new Mock<ICommand>();
+        var command = new CommandInjectableCommand();
+
+        command.Inject(innerCommand.Object);
+        command.Execute();
+
+        innerCommand.Verify(x => x.Execute(), Times.Once);
+    }
+
+    [Fact]
+    public void CommandInjectableCommand_Execute_Throws_WhenCommandWasNotInjected()
+    {
+        var command = new CommandInjectableCommand();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            command.Execute()
+        );
+    }
+
+    [Fact]
+    public void CommandInjectableCommand_Inject_Throws_WhenCommandIsNull()
+    {
+        var command = new CommandInjectableCommand();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            command.Inject(null!)
+        );
+    }
+
+    [Fact]
+    public void CommandInjectableCommand_Inject_ReplacesPreviousCommand()
+    {
+        var first = new Mock<ICommand>();
+        var second = new Mock<ICommand>();
+        var command = new CommandInjectableCommand();
+
+        command.Inject(first.Object);
+        command.Inject(second.Object);
+        command.Execute();
+
+        first.Verify(x => x.Execute(), Times.Never);
+        second.Verify(x => x.Execute(), Times.Once);
+    }
+
+    [Fact]
     public void MoveCommand_Constructor_Throws_WhenMovingObjectIsNull()
     {
         Assert.Throws<ArgumentNullException>(() =>
