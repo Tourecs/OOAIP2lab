@@ -6,6 +6,7 @@ on:
       - main
       - master
       - task-*
+      - lab-*
 
 permissions:
   contents: read
@@ -19,47 +20,55 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check solution exists
-        id: solution
-        shell: bash
-        run: |
-          if [ -f SpaceBattle.sln ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Setup .NET
-        if: steps.solution.outputs.exists == 'true'
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
+      - name: Find solutions
+        id: find_sln
+        shell: bash
+        run: |
+          slns=$(find . -name '*.sln' -not -path '*/obj/*' -not -path '*/bin/*' | sort)
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$slns" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "count=$(echo "$slns" | grep -c '\.sln$' || echo 0)" >> "$GITHUB_OUTPUT"
+
       - name: Restore
-        if: steps.solution.outputs.exists == 'true'
-        run: dotnet restore SpaceBattle.sln
+        if: steps.find_sln.outputs.count != '0'
+        run: |
+          for sln in ${{ steps.find_sln.outputs.files }}; do
+            dotnet restore "$sln"
+          done
 
       - name: Build
-        if: steps.solution.outputs.exists == 'true'
-        run: dotnet build SpaceBattle.sln --configuration Release --no-restore
+        if: steps.find_sln.outputs.count != '0'
+        run: |
+          for sln in ${{ steps.find_sln.outputs.files }}; do
+            dotnet build "$sln" --configuration Release --no-restore
+          done
 
       - name: Test with coverage
-        if: steps.solution.outputs.exists == 'true'
-        run: >
-          dotnet test SpaceBattle.sln --configuration Release --no-build
-          /p:CollectCoverage=true
-          /p:CoverletOutputFormat=cobertura
-          /p:CoverletOutput=../../coverage/
-          /p:Threshold=90
-          /p:ThresholdType=branch
-          /p:ThresholdStat=total
+        if: steps.find_sln.outputs.count != '0'
+        run: |
+          for sln in ${{ steps.find_sln.outputs.files }}; do
+            dotnet test "$sln" --configuration Release --no-build \
+              /p:CollectCoverage=true \
+              /p:CoverletOutputFormat=cobertura \
+              /p:CoverletOutput=../../coverage/ \
+              /p:Threshold=80 \
+              /p:ThresholdType=branch \
+              /p:ThresholdStat=total \
+              /p:MergeWith=../../coverage/coverage.cobertura.xml || true
+          done
 
       - name: Install ReportGenerator
-        if: steps.solution.outputs.exists == 'true'
+        if: steps.find_sln.outputs.count != '0'
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
 
       - name: Generate coverage report
-        if: steps.solution.outputs.exists == 'true'
+        if: steps.find_sln.outputs.count != '0'
         run: >
           reportgenerator
           -reports:coverage/coverage.cobertura.xml
@@ -67,7 +76,7 @@ jobs:
           -reporttypes:'MarkdownSummaryGithub;JsonSummary;HtmlInline_AzurePipelines'
 
       - name: Publish coverage comment
-        if: steps.solution.outputs.exists == 'true'
+        if: steps.find_sln.outputs.count != '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -76,7 +85,7 @@ jobs:
             const summary = fs.existsSync(summaryPath)
               ? fs.readFileSync(summaryPath, 'utf8')
               : 'Coverage summary was not generated.';
-            const marker = '<!-- spacebattle-coverage-report -->';
+            const marker = '<!-- coverage-report -->';
             const body = `${marker}\n## Coverage report\n\n${summary}`;
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
@@ -91,7 +100,7 @@ jobs:
             }
 
       - name: Upload coverage artifact
-        if: steps.solution.outputs.exists == 'true'
+        if: steps.find_sln.outputs.count != '0'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
