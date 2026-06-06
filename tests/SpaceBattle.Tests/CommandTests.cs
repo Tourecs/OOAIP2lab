@@ -52,4 +52,47 @@ public sealed class CommandTests
 
     Assert.Throws<NullReferenceException>(() => command.Execute());
     }
+
+    [Fact]
+    public void MacroCommandWithEmptyCommandListDoesNothing()
+    {
+        var command = new MacroCommand(Array.Empty<ICommand>());
+
+        command.Execute();
+    }
+
+    [Fact]
+    public void MacroCommandExecutesSingleCommand()
+    {
+        var inner = new Mock<ICommand>();
+
+        var command = new MacroCommand(new[] { inner.Object });
+
+        command.Execute();
+
+        inner.Verify(x => x.Execute(), Times.Once);
+    }
+
+    [Fact]
+    public void MacroCommandStopsOnSecondCommandException()
+    {
+        var first = new Mock<ICommand>();
+        var second = new Mock<ICommand>();
+        var third = new Mock<ICommand>();
+
+        second.Setup(x => x.Execute()).Throws<InvalidOperationException>();
+
+        var command = new MacroCommand(new[]
+        {
+            first.Object,
+            second.Object,
+            third.Object
+        });
+
+        Assert.Throws<InvalidOperationException>(() => command.Execute());
+
+        first.Verify(x => x.Execute(), Times.Once);
+        second.Verify(x => x.Execute(), Times.Once);
+        third.Verify(x => x.Execute(), Times.Never);
+    }
 }
