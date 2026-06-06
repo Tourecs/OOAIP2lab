@@ -29,7 +29,11 @@ public sealed class RegisterIoCDependencyGame : ICommand
 {
     public void Execute()
     {
-        Ioc.Register("Game.Current", _ => new Game());
+        Ioc.Register("Game.Current", args =>
+        {
+            var auth = (IAuthorization)args[0];
+            return new Game(auth);
+        });
     }
 }
 
@@ -41,7 +45,8 @@ public sealed class RegisterIoCDependencyLaunchPhotonTorpedoCommand : ICommand
         {
             var ship = (IGameObject)args[0];
             var direction = (double)args[1];
-            return new LaunchPhotonTorpedoCommand(ship, direction);
+            var game = (Game)args[2];
+            return new LaunchPhotonTorpedoCommand(ship, direction, game);
         });
     }
 }
@@ -69,6 +74,6 @@ public sealed class MoveCommand : ICommand
 
     public void Execute()
     {
-        _gameObject.Position = _gameObject.Position + _gameObject.Velocity;
+        _gameObject.Update();
     }
 }

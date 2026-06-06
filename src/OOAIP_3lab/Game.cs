@@ -5,6 +5,12 @@ namespace OOAIP_3lab;
 public class Game : IGameObjectRepository
 {
     private readonly List<IGameObject> _gameObjects = new();
+    private readonly IAuthorization _auth;
+
+    public Game(IAuthorization auth)
+    {
+        _auth = auth ?? throw new ArgumentNullException(nameof(auth));
+    }
 
     public void Add(IGameObject gameObject)
     {
@@ -39,8 +45,7 @@ public class Game : IGameObjectRepository
 
     public void LaunchPhotonTorpedo(IGameObject ship, double direction)
     {
-        var auth = Ioc.Resolve<IAuthorization>("Authorization");
-        if (!auth.CanPerform(ship, "LaunchPhotonTorpedo"))
+        if (!_auth.CanPerform(ship, "LaunchPhotonTorpedo"))
         {
             throw new UnauthorizedAccessException("Object cannot perform LaunchPhotonTorpedo");
         }

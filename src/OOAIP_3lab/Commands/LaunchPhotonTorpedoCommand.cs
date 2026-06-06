@@ -4,16 +4,17 @@ public class LaunchPhotonTorpedoCommand : ICommand
 {
     private readonly IGameObject _ship;
     private readonly double _direction;
+    private readonly Game _game;
 
-    public LaunchPhotonTorpedoCommand(IGameObject ship, double direction)
+    public LaunchPhotonTorpedoCommand(IGameObject ship, double direction, Game game)
     {
         _ship = ship ?? throw new ArgumentNullException(nameof(ship));
         _direction = direction;
+        _game = game ?? throw new ArgumentNullException(nameof(game));
     }
 
     public void Execute()
     {
-        var game = Ioc.Resolve<Game>("Game.Current");
-        game.LaunchPhotonTorpedo(_ship, _direction);
+        _game.LaunchPhotonTorpedo(_ship, _direction);
     }
 }

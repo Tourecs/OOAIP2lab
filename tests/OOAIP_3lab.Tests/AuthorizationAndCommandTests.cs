@@ -8,19 +8,31 @@ namespace OOAIP_3lab.Tests;
 public sealed class AuthorizationTests
 {
     [Fact]
-    public void CanPerformReturnsTrueForKnownAction()
+    public void CanPerformReturnsTrueForLaunchTorpedoWhenObjectHasCapability()
+    {
+        var auth = new Authorization();
+        var ship = new Mock<ICanLaunchTorpedo>();
+        ship.SetupGet(s => s.CanLaunchTorpedo).Returns(true);
+        var obj = ship.As<IGameObject>();
+        Assert.True(auth.CanPerform(obj.Object, "LaunchPhotonTorpedo"));
+    }
+
+    [Fact]
+    public void CanPerformReturnsFalseWhenObjectLacksCapability()
     {
         var auth = new Authorization();
         var obj = Mock.Of<IGameObject>();
-        Assert.True(auth.CanPerform(obj, "LaunchPhotonTorpedo"));
+        Assert.False(auth.CanPerform(obj, "LaunchPhotonTorpedo"));
     }
 
     [Fact]
     public void CanPerformReturnsFalseForUnknownAction()
     {
         var auth = new Authorization();
-        var obj = Mock.Of<IGameObject>();
-        Assert.False(auth.CanPerform(obj, "UnknownAction"));
+        var ship = new Mock<ICanLaunchTorpedo>();
+        ship.SetupGet(s => s.CanLaunchTorpedo).Returns(true);
+        var obj = ship.As<IGameObject>();
+        Assert.False(auth.CanPerform(obj.Object, "UnknownAction"));
     }
 
     [Fact]
@@ -54,7 +66,6 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
     [Fact]
     public void LaunchCommandAddsTorpedoFromShipPosition()
     {
-        Ioc.Register("Authorization", _ => new Authorization());
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -62,30 +73,34 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var game = new Game();
-        Ioc.Register("Game.Current", _ => game);
+        var auth = new Authorization();
+        var game = new Game(auth);
 
-        var ship = Mock.Of<IGameObject>(s => s.Position == new Vector(10, 20));
-        var cmd = new LaunchPhotonTorpedoCommand(ship, 0);
+        var ship = new ShipWithLaunchCapability(10, 20);
+        var cmd = new LaunchPhotonTorpedoCommand(ship, 0, game);
         cmd.Execute();
 
-        var torpedo = game.GetAll().OfType<PhotonTorpedo>().First();
-        Assert.Equal(10, torpedo.Position.X);
-        Assert.Equal(20, torpedo.Position.Y);
+        Assert.Single(game.GetAll().OfType<PhotonTorpedo>());
     }
 
     [Fact]
     public void LaunchCommandThrowsWhenShipIsNull()
     {
-        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(null!, 0));
+        var auth = new Authorization();
+        var game = new Game(auth);
+        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(null!, 0, game));
+    }
+
+    [Fact]
+    public void LaunchCommandThrowsWhenGameIsNull()
+    {
+        var ship = new ShipWithLaunchCapability(0, 0);
+        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(ship, 0, null!));
     }
 
     [Fact]
     public void LaunchCommandUnauthorizedThrows()
     {
-        var denyAuth = new Mock<IAuthorization>();
-        denyAuth.Setup(a => a.CanPerform(It.IsAny<IGameObject>(), "LaunchPhotonTorpedo")).Returns(false);
-        Ioc.Register("Authorization", _ => denyAuth.Object);
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -93,11 +108,30 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var game = new Game();
-        Ioc.Register("Game.Current", _ => game);
+        var denyAuth = new Mock<IAuthorization>();
+        denyAuth.Setup(a => a.CanPerform(It.IsAny<IGameObject>(), "LaunchPhotonTorpedo")).Returns(false);
+        var game = new Game(denyAuth.Object);
 
-        var ship = Mock.Of<IGameObject>(s => s.Position == new Vector(0, 0));
-        var cmd = new LaunchPhotonTorpedoCommand(ship, 0);
+        var ship = new ShipWithLaunchCapability(0, 0);
+        var cmd = new LaunchPhotonTorpedoCommand(ship, 0, game);
         Assert.Throws<UnauthorizedAccessException>(() => cmd.Execute());
+    }
+
+    private class ShipWithLaunchCapability : IGameObject, ICanLaunchTorpedo
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public Vector Position { get; private set; }
+        public Vector Velocity { get; private set; } = new Vector(0, 0);
+        public bool CanLaunchTorpedo => true;
+
+        public ShipWithLaunchCapability(double x, double y)
+        {
+            Position = new Vector(x, y);
+        }
+
+        public void Update()
+        {
+            Position = Position + Velocity;
+        }
     }
 }

@@ -10,8 +10,8 @@ public interface ICommand
 public interface IGameObject
 {
     Guid Id { get; }
-    Vector Position { get; set; }
-    Vector Velocity { get; set; }
+    Vector Position { get; }
+    Vector Velocity { get; }
     void Update();
 }
 

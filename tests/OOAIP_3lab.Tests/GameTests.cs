@@ -1,3 +1,4 @@
+using Moq;
 using OOAIP_3lab.GameObjects;
 using Xunit;
 
@@ -10,7 +11,8 @@ public sealed class GameTests : IDisposable
     public GameTests()
     {
         Ioc.Clear();
-        _game = new Game();
+        var auth = new Authorization();
+        _game = new Game(auth);
     }
 
     public void Dispose()
@@ -54,7 +56,7 @@ public sealed class GameTests : IDisposable
     public void GameUpdateMovesAllObjects()
     {
         var obj = new TestGameObject(1, 2);
-        obj.Velocity = new Vector(3, 4);
+        obj.SetVelocity(new Vector(3, 4));
         _game.Add(obj);
         _game.Update();
         Assert.Equal(4, obj.Position.X);
@@ -64,7 +66,6 @@ public sealed class GameTests : IDisposable
     [Fact]
     public void GameLaunchPhotonTorpedoAddsTorpedo()
     {
-        Ioc.Register("Authorization", _ => new Authorization());
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -72,7 +73,7 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var ship = new TestGameObject(10, 20);
+        var ship = new ShipWithLaunch(10, 20);
         _game.Add(ship);
         _game.LaunchPhotonTorpedo(ship, 0);
         Assert.Equal(2, _game.GetAll().Count());
@@ -81,7 +82,6 @@ public sealed class GameTests : IDisposable
     [Fact]
     public void GameLaunchPhotonTorpedoCreatesMovingTorpedo()
     {
-        Ioc.Register("Authorization", _ => new Authorization());
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -89,7 +89,8 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var ship = new TestGameObject(0, 0);
+        var ship = new ShipWithLaunch(0, 0);
+        _game.Add(ship);
         _game.LaunchPhotonTorpedo(ship, 0);
         _game.Update();
         var torpedo = _game.GetAll().OfType<PhotonTorpedo>().First();
@@ -101,7 +102,6 @@ public sealed class GameTests : IDisposable
     {
         var denyAuth = new Mock<IAuthorization>();
         denyAuth.Setup(a => a.CanPerform(It.IsAny<IGameObject>(), "LaunchPhotonTorpedo")).Returns(false);
-        Ioc.Register("Authorization", _ => denyAuth.Object);
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -109,17 +109,44 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var ship = new TestGameObject(0, 0);
-        Assert.Throws<UnauthorizedAccessException>(() => _game.LaunchPhotonTorpedo(ship, 0));
+        var game = new Game(denyAuth.Object);
+        var ship = new ShipWithLaunch(0, 0);
+        Assert.Throws<UnauthorizedAccessException>(() => game.LaunchPhotonTorpedo(ship, 0));
+    }
+
+    [Fact]
+    public void GameConstructorThrowsWhenAuthIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Game(null!));
     }
 
     private class TestGameObject : IGameObject
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public Vector Position { get; set; }
-        public Vector Velocity { get; set; } = new Vector(0, 0);
+        public Guid Id { get; } = Guid.NewGuid();
+        public Vector Position { get; private set; }
+        public Vector Velocity { get; private set; } = new Vector(0, 0);
 
         public TestGameObject(double x, double y)
+        {
+            Position = new Vector(x, y);
+        }
+
+        public void SetVelocity(Vector v) => Velocity = v;
+
+        public void Update()
+        {
+            Position = Position + Velocity;
+        }
+    }
+
+    private class ShipWithLaunch : IGameObject, ICanLaunchTorpedo
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public Vector Position { get; private set; }
+        public Vector Velocity { get; private set; } = new Vector(0, 0);
+        public bool CanLaunchTorpedo => true;
+
+        public ShipWithLaunch(double x, double y)
         {
             Position = new Vector(x, y);
         }

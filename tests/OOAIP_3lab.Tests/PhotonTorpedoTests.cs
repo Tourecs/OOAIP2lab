@@ -55,15 +55,29 @@ public sealed class PhotonTorpedoTests
     }
 
     [Fact]
-    public void GameObjectDefaultConstructorSetsZeroPositionAndVelocity()
+    public void PhotonTorpedoImplementsIGameObject()
     {
-        var obj = new TestGameObject();
-        Assert.Equal(new Vector(0, 0), obj.Position);
-        Assert.Equal(new Vector(0, 0), obj.Velocity);
-        Assert.NotEqual(Guid.Empty, obj.Id);
+        IGameObject torpedo = new PhotonTorpedo(0, 0, 0, 5.0);
+        Assert.NotEqual(Guid.Empty, torpedo.Id);
+        Assert.Equal(0, torpedo.Position.X);
+        Assert.Equal(0, torpedo.Position.Y);
     }
 
-    private class TestGameObject : GameObject
+    [Fact]
+    public void PhotonTorpedoCannotChangeId()
     {
+        var torpedo = new PhotonTorpedo(0, 0, 0, 5.0);
+        var idBefore = torpedo.Id;
+        torpedo.Update();
+        Assert.Equal(idBefore, torpedo.Id);
+    }
+
+    [Fact]
+    public void PhotonTorpedoPositionChangesAfterUpdate()
+    {
+        var torpedo = new PhotonTorpedo(1, 2, 0, 3);
+        var posBefore = torpedo.Position;
+        torpedo.Update();
+        Assert.NotEqual(posBefore, torpedo.Position);
     }
 }

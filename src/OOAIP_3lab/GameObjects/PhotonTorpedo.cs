@@ -1,20 +1,23 @@
 namespace OOAIP_3lab.GameObjects;
 
-public class PhotonTorpedo : GameObject
+public class PhotonTorpedo : IGameObject
 {
-    public double Direction { get; set; }
-    public double Speed { get; set; }
+    public Guid Id { get; } = Guid.NewGuid();
+    public Vector Position { get; private set; }
+    public Vector Velocity { get; private set; }
+    public double Direction { get; }
+    public double Speed { get; }
 
     public PhotonTorpedo(double x, double y, double direction, double speed)
-        : base(x, y, 0, 0)
     {
+        Position = new Vector(x, y);
         Direction = direction;
         Speed = speed;
         Velocity = Vector.FromAngle(Direction, Speed);
     }
 
-    public override void Update()
+    public void Update()
     {
-        base.Update();
+        Position = Position + Velocity;
     }
 }
