@@ -45,8 +45,9 @@ public sealed class RegisterIoCDependencyLaunchPhotonTorpedoCommand : ICommand
         {
             var ship = (IGameObject)args[0];
             var direction = (double)args[1];
-            var game = (Game)args[2];
-            return new LaunchPhotonTorpedoCommand(ship, direction, game);
+            var role = (string)args[2];
+            var game = (Game)args[3];
+            return new LaunchPhotonTorpedoCommand(ship, direction, role, game);
         });
     }
 }

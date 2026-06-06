@@ -43,11 +43,11 @@ public class Game : IGameObjectRepository
         }
     }
 
-    public void LaunchPhotonTorpedo(IGameObject ship, double direction)
+    public void LaunchPhotonTorpedo(IGameObject ship, double direction, string role)
     {
-        if (!_auth.CanPerform(ship, "LaunchPhotonTorpedo"))
+        if (!_auth.CanPerform(role, "LaunchPhotonTorpedo"))
         {
-            throw new UnauthorizedAccessException("Object cannot perform LaunchPhotonTorpedo");
+            throw new UnauthorizedAccessException($"Role '{role}' cannot perform LaunchPhotonTorpedo");
         }
 
         var torpedo = Ioc.Resolve<IGameObject>("GameObjects.PhotonTorpedo", ship.Position.X, ship.Position.Y, direction);

@@ -73,9 +73,9 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var ship = new ShipWithLaunch(10, 20);
+        var ship = new TestGameObject(10, 20);
         _game.Add(ship);
-        _game.LaunchPhotonTorpedo(ship, 0);
+        _game.LaunchPhotonTorpedo(ship, 0, "player");
         Assert.Equal(2, _game.GetAll().Count());
     }
 
@@ -89,9 +89,9 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var ship = new ShipWithLaunch(0, 0);
+        var ship = new TestGameObject(0, 0);
         _game.Add(ship);
-        _game.LaunchPhotonTorpedo(ship, 0);
+        _game.LaunchPhotonTorpedo(ship, 0, "player");
         _game.Update();
         var torpedo = _game.GetAll().OfType<PhotonTorpedo>().First();
         Assert.Equal(5.0, torpedo.Position.X, 10);
@@ -100,8 +100,8 @@ public sealed class GameTests : IDisposable
     [Fact]
     public void GameLaunchPhotonTorpedoUnauthorizedThrows()
     {
-        var denyAuth = new Mock<IAuthorization>();
-        denyAuth.Setup(a => a.CanPerform(It.IsAny<IGameObject>(), "LaunchPhotonTorpedo")).Returns(false);
+        var auth = new Authorization();
+        auth.Revoke("player", "LaunchPhotonTorpedo");
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -109,9 +109,9 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-        var game = new Game(denyAuth.Object);
-        var ship = new ShipWithLaunch(0, 0);
-        Assert.Throws<UnauthorizedAccessException>(() => game.LaunchPhotonTorpedo(ship, 0));
+        var game = new Game(auth);
+        var ship = new TestGameObject(0, 0);
+        Assert.Throws<UnauthorizedAccessException>(() => game.LaunchPhotonTorpedo(ship, 0, "player"));
     }
 
     [Fact]
@@ -132,24 +132,6 @@ public sealed class GameTests : IDisposable
         }
 
         public void SetVelocity(Vector v) => Velocity = v;
-
-        public void Update()
-        {
-            Position = Position + Velocity;
-        }
-    }
-
-    private class ShipWithLaunch : IGameObject, ICanLaunchTorpedo
-    {
-        public Guid Id { get; } = Guid.NewGuid();
-        public Vector Position { get; private set; }
-        public Vector Velocity { get; private set; } = new Vector(0, 0);
-        public bool CanLaunchTorpedo => true;
-
-        public ShipWithLaunch(double x, double y)
-        {
-            Position = new Vector(x, y);
-        }
 
         public void Update()
         {

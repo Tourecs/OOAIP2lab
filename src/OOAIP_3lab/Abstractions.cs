@@ -15,11 +15,6 @@ public interface IGameObject
     void Update();
 }
 
-public interface IAuthorization
-{
-    bool CanPerform(IGameObject obj, string action);
-}
-
 public static class Ioc
 {
     private static readonly ConcurrentDictionary<string, Func<object[], object>> Dependencies = new();

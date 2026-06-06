@@ -48,7 +48,7 @@ public sealed class IocTests : IDisposable
         new RegisterIoCDependencyLaunchPhotonTorpedoCommand().Execute();
         var ship = Mock.Of<IGameObject>();
         var game = new Game(new Authorization());
-        var cmd = Ioc.Resolve<ICommand>("Commands.LaunchPhotonTorpedo", ship, 0.0, game);
+        var cmd = Ioc.Resolve<ICommand>("Commands.LaunchPhotonTorpedo", ship, 0.0, "player", game);
         Assert.IsType<LaunchPhotonTorpedoCommand>(cmd);
     }
 
@@ -86,8 +86,8 @@ public sealed class IocTests : IDisposable
         var auth = new Authorization();
         var game = new Game(auth);
 
-        var ship = new ShipWithLaunch(5, 10);
-        var cmd = Ioc.Resolve<ICommand>("Commands.LaunchPhotonTorpedo", ship, Math.PI / 2, game);
+        var ship = Mock.Of<IGameObject>(s => s.Position == new Vector(5, 10));
+        var cmd = Ioc.Resolve<ICommand>("Commands.LaunchPhotonTorpedo", ship, Math.PI / 2, "player", game);
         cmd.Execute();
 
         var torpedo = game.GetAll().OfType<PhotonTorpedo>().First();
@@ -99,23 +99,5 @@ public sealed class IocTests : IDisposable
     public void ResolveThrowsWhenDependencyNotRegistered()
     {
         Assert.Throws<InvalidOperationException>(() => Ioc.Resolve<object>("Nonexistent"));
-    }
-
-    private class ShipWithLaunch : IGameObject, ICanLaunchTorpedo
-    {
-        public Guid Id { get; } = Guid.NewGuid();
-        public Vector Position { get; private set; }
-        public Vector Velocity { get; private set; } = new Vector(0, 0);
-        public bool CanLaunchTorpedo => true;
-
-        public ShipWithLaunch(double x, double y)
-        {
-            Position = new Vector(x, y);
-        }
-
-        public void Update()
-        {
-            Position = Position + Velocity;
-        }
     }
 }
