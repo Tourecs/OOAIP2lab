@@ -1,24 +1,10 @@
 using OOAIP_3lab.GameObjects;
 
-namespace OOAIP_3lab.Game;
+namespace OOAIP_3lab;
 
-public class Game : BaseGame, IGameObjectRepository
+public class Game : IGameObjectRepository
 {
     private readonly List<IGameObject> _gameObjects = new();
-
-    public override void Update()
-    {
-        foreach (var gameObject in _gameObjects.ToList())
-        {
-            gameObject.Update();
-        }
-    }
-
-    public override void LaunchPhotonTorpedo(double x, double y, double direction)
-    {
-        var torpedo = Ioc.Resolve<IGameObject>("GameObjects.PhotonTorpedo", x, y, direction);
-        Add(torpedo);
-    }
 
     public void Add(IGameObject gameObject)
     {
@@ -41,5 +27,25 @@ public class Game : BaseGame, IGameObjectRepository
     {
         return _gameObjects.FirstOrDefault(g => g.Id == id)
             ?? throw new InvalidOperationException($"Game object with id '{id}' not found.");
+    }
+
+    public void Update()
+    {
+        foreach (var gameObject in _gameObjects.ToList())
+        {
+            gameObject.Update();
+        }
+    }
+
+    public void LaunchPhotonTorpedo(IGameObject ship, double direction)
+    {
+        var auth = Ioc.Resolve<IAuthorization>("Authorization");
+        if (!auth.CanPerform(ship, "LaunchPhotonTorpedo"))
+        {
+            throw new UnauthorizedAccessException("Object cannot perform LaunchPhotonTorpedo");
+        }
+
+        var torpedo = Ioc.Resolve<IGameObject>("GameObjects.PhotonTorpedo", ship.Position.X, ship.Position.Y, direction);
+        Add(torpedo);
     }
 }

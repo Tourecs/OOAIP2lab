@@ -9,7 +9,6 @@ public sealed class PhotonTorpedoTests
     public void PhotonTorpedoInitializesWithCorrectPosition()
     {
         var torpedo = new PhotonTorpedo(10, 20, 0, 5.0);
-
         Assert.Equal(10, torpedo.Position.X);
         Assert.Equal(20, torpedo.Position.Y);
     }
@@ -18,7 +17,6 @@ public sealed class PhotonTorpedoTests
     public void PhotonTorpedoInitializesWithCorrectDirection()
     {
         var torpedo = new PhotonTorpedo(0, 0, Math.PI / 4, 5.0);
-
         Assert.Equal(Math.PI / 4, torpedo.Direction);
     }
 
@@ -26,7 +24,6 @@ public sealed class PhotonTorpedoTests
     public void PhotonTorpedoVelocityIsSetFromAngle()
     {
         var torpedo = new PhotonTorpedo(0, 0, 0, 5.0);
-
         Assert.Equal(5.0, torpedo.Velocity.X, 10);
         Assert.Equal(0, torpedo.Velocity.Y, 10);
     }
@@ -35,9 +32,7 @@ public sealed class PhotonTorpedoTests
     public void PhotonTorpedoUpdatesPositionCorrectly()
     {
         var torpedo = new PhotonTorpedo(0, 0, 0, 5.0);
-
         torpedo.Update();
-
         Assert.Equal(5.0, torpedo.Position.X, 10);
         Assert.Equal(0, torpedo.Position.Y, 10);
     }
@@ -46,9 +41,7 @@ public sealed class PhotonTorpedoTests
     public void PhotonTorpedoMovesDiagonally()
     {
         var torpedo = new PhotonTorpedo(0, 0, Math.PI / 4, Math.Sqrt(2));
-
         torpedo.Update();
-
         Assert.Equal(1, torpedo.Position.X, 6);
         Assert.Equal(1, torpedo.Position.Y, 6);
     }

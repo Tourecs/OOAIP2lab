@@ -1,4 +1,3 @@
-using OOAIP_3lab.Game;
 using OOAIP_3lab.GameObjects;
 using Xunit;
 
@@ -6,12 +5,12 @@ namespace OOAIP_3lab.Tests;
 
 public sealed class GameTests : IDisposable
 {
-    private readonly OOAIP_3lab.Game.Game _game;
+    private readonly Game _game;
 
     public GameTests()
     {
         Ioc.Clear();
-        _game = new OOAIP_3lab.Game.Game();
+        _game = new Game();
     }
 
     public void Dispose()
@@ -23,9 +22,7 @@ public sealed class GameTests : IDisposable
     public void GameAddAndRetrieveGameObject()
     {
         var obj = new TestGameObject(1, 2);
-
         _game.Add(obj);
-
         Assert.Single(_game.GetAll());
     }
 
@@ -34,9 +31,7 @@ public sealed class GameTests : IDisposable
     {
         var obj = new TestGameObject(1, 2);
         _game.Add(obj);
-
         _game.Remove(obj);
-
         Assert.Empty(_game.GetAll());
     }
 
@@ -45,9 +40,7 @@ public sealed class GameTests : IDisposable
     {
         var obj = new TestGameObject(1, 2);
         _game.Add(obj);
-
         var found = _game.GetById(obj.Id);
-
         Assert.Equal(obj.Id, found.Id);
     }
 
@@ -63,9 +56,7 @@ public sealed class GameTests : IDisposable
         var obj = new TestGameObject(1, 2);
         obj.Velocity = new Vector(3, 4);
         _game.Add(obj);
-
         _game.Update();
-
         Assert.Equal(4, obj.Position.X);
         Assert.Equal(6, obj.Position.Y);
     }
@@ -73,6 +64,7 @@ public sealed class GameTests : IDisposable
     [Fact]
     public void GameLaunchPhotonTorpedoAddsTorpedo()
     {
+        Ioc.Register("Authorization", _ => new Authorization());
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -80,15 +72,16 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-
-        _game.LaunchPhotonTorpedo(10, 20, 0);
-
-        Assert.Single(_game.GetAll());
+        var ship = new TestGameObject(10, 20);
+        _game.Add(ship);
+        _game.LaunchPhotonTorpedo(ship, 0);
+        Assert.Equal(2, _game.GetAll().Count());
     }
 
     [Fact]
     public void GameLaunchPhotonTorpedoCreatesMovingTorpedo()
     {
+        Ioc.Register("Authorization", _ => new Authorization());
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -96,12 +89,28 @@ public sealed class GameTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
-
-        _game.LaunchPhotonTorpedo(0, 0, 0);
+        var ship = new TestGameObject(0, 0);
+        _game.LaunchPhotonTorpedo(ship, 0);
         _game.Update();
-
-        var torpedo = _game.GetAll().First();
+        var torpedo = _game.GetAll().OfType<PhotonTorpedo>().First();
         Assert.Equal(5.0, torpedo.Position.X, 10);
+    }
+
+    [Fact]
+    public void GameLaunchPhotonTorpedoUnauthorizedThrows()
+    {
+        var denyAuth = new Mock<IAuthorization>();
+        denyAuth.Setup(a => a.CanPerform(It.IsAny<IGameObject>(), "LaunchPhotonTorpedo")).Returns(false);
+        Ioc.Register("Authorization", _ => denyAuth.Object);
+        Ioc.Register("GameObjects.PhotonTorpedo", args =>
+        {
+            var x = (double)args[0];
+            var y = (double)args[1];
+            var dir = (double)args[2];
+            return new PhotonTorpedo(x, y, dir, 5.0);
+        });
+        var ship = new TestGameObject(0, 0);
+        Assert.Throws<UnauthorizedAccessException>(() => _game.LaunchPhotonTorpedo(ship, 0));
     }
 
     private class TestGameObject : IGameObject

@@ -1,5 +1,4 @@
 using OOAIP_3lab.Commands;
-using OOAIP_3lab.Game;
 using OOAIP_3lab.GameObjects;
 
 namespace OOAIP_3lab;
@@ -30,7 +29,7 @@ public sealed class RegisterIoCDependencyGame : ICommand
 {
     public void Execute()
     {
-        Ioc.Register("Game.Current", _ => new Game.Game());
+        Ioc.Register("Game.Current", _ => new Game());
     }
 }
 
@@ -40,12 +39,9 @@ public sealed class RegisterIoCDependencyLaunchPhotonTorpedoCommand : ICommand
     {
         Ioc.Register("Commands.LaunchPhotonTorpedo", args =>
         {
-            var x = (double)args[0];
-            var y = (double)args[1];
-            var direction = (double)args[2];
-            var user = (string)args[3];
-            var token = (string)args[4];
-            return new LaunchPhotonTorpedoCommand(x, y, direction, user, token);
+            var ship = (IGameObject)args[0];
+            var direction = (double)args[1];
+            return new LaunchPhotonTorpedoCommand(ship, direction);
         });
     }
 }

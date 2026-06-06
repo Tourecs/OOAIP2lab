@@ -1,5 +1,5 @@
+using Moq;
 using OOAIP_3lab.Commands;
-using OOAIP_3lab.Game;
 using OOAIP_3lab.GameObjects;
 using Xunit;
 
@@ -8,38 +8,34 @@ namespace OOAIP_3lab.Tests;
 public sealed class AuthorizationTests
 {
     [Fact]
-    public void IsAuthorizedReturnsTrueForValidCredentials()
+    public void CanPerformReturnsTrueForKnownAction()
     {
         var auth = new Authorization();
-        Assert.True(auth.IsAuthorized("player1", "token123"));
+        var obj = Mock.Of<IGameObject>();
+        Assert.True(auth.CanPerform(obj, "LaunchPhotonTorpedo"));
     }
 
     [Fact]
-    public void IsAuthorizedReturnsFalseForEmptyUser()
+    public void CanPerformReturnsFalseForUnknownAction()
     {
         var auth = new Authorization();
-        Assert.False(auth.IsAuthorized("", "token123"));
+        var obj = Mock.Of<IGameObject>();
+        Assert.False(auth.CanPerform(obj, "UnknownAction"));
     }
 
     [Fact]
-    public void IsAuthorizedReturnsFalseForNullToken()
+    public void CanPerformThrowsWhenObjectIsNull()
     {
         var auth = new Authorization();
-        Assert.False(auth.IsAuthorized("player1", null!));
+        Assert.Throws<ArgumentNullException>(() => auth.CanPerform(null!, "LaunchPhotonTorpedo"));
     }
 
     [Fact]
-    public void AuthenticateSucceedsForValidCredentials()
+    public void CanPerformThrowsWhenActionIsEmpty()
     {
         var auth = new Authorization();
-        auth.Authenticate("player1", "token123");
-    }
-
-    [Fact]
-    public void AuthenticateThrowsForInvalidCredentials()
-    {
-        var auth = new Authorization();
-        Assert.Throws<UnauthorizedAccessException>(() => auth.Authenticate("", "token"));
+        var obj = Mock.Of<IGameObject>();
+        Assert.Throws<ArgumentException>(() => auth.CanPerform(obj, ""));
     }
 }
 
@@ -56,11 +52,9 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
     }
 
     [Fact]
-    public void LaunchCommandAddsTorpedoWhenAuthorized()
+    public void LaunchCommandAddsTorpedoFromShipPosition()
     {
         Ioc.Register("Authorization", _ => new Authorization());
-        var game = new OOAIP_3lab.Game.Game();
-        Ioc.Register("Game.Current", _ => game);
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -68,18 +62,30 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
+        var game = new Game();
+        Ioc.Register("Game.Current", _ => game);
 
-        var cmd = new LaunchPhotonTorpedoCommand(10, 20, 0, "player1", "token123");
+        var ship = Mock.Of<IGameObject>(s => s.Position == new Vector(10, 20));
+        var cmd = new LaunchPhotonTorpedoCommand(ship, 0);
         cmd.Execute();
 
-        Assert.Single(game.GetAll());
+        var torpedo = game.GetAll().OfType<PhotonTorpedo>().First();
+        Assert.Equal(10, torpedo.Position.X);
+        Assert.Equal(20, torpedo.Position.Y);
     }
 
     [Fact]
-    public void LaunchCommandThrowsUnauthorizedWhenCredentialsInvalid()
+    public void LaunchCommandThrowsWhenShipIsNull()
     {
-        Ioc.Register("Authorization", _ => new Authorization());
-        Ioc.Register("Game.Current", _ => new OOAIP_3lab.Game.Game());
+        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(null!, 0));
+    }
+
+    [Fact]
+    public void LaunchCommandUnauthorizedThrows()
+    {
+        var denyAuth = new Mock<IAuthorization>();
+        denyAuth.Setup(a => a.CanPerform(It.IsAny<IGameObject>(), "LaunchPhotonTorpedo")).Returns(false);
+        Ioc.Register("Authorization", _ => denyAuth.Object);
         Ioc.Register("GameObjects.PhotonTorpedo", args =>
         {
             var x = (double)args[0];
@@ -87,43 +93,11 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
             var dir = (double)args[2];
             return new PhotonTorpedo(x, y, dir, 5.0);
         });
+        var game = new Game();
+        Ioc.Register("Game.Current", _ => game);
 
-        var cmd = new LaunchPhotonTorpedoCommand(10, 20, 0, "", "invalid");
-
+        var ship = Mock.Of<IGameObject>(s => s.Position == new Vector(0, 0));
+        var cmd = new LaunchPhotonTorpedoCommand(ship, 0);
         Assert.Throws<UnauthorizedAccessException>(() => cmd.Execute());
-    }
-
-    [Fact]
-    public void LaunchCommandTorpedoMovesAfterUpdate()
-    {
-        Ioc.Register("Authorization", _ => new Authorization());
-        var game = new OOAIP_3lab.Game.Game();
-        Ioc.Register("Game.Current", _ => game);
-        Ioc.Register("GameObjects.PhotonTorpedo", args =>
-        {
-            var x = (double)args[0];
-            var y = (double)args[1];
-            var dir = (double)args[2];
-            return new PhotonTorpedo(x, y, dir, 5.0);
-        });
-
-        var cmd = new LaunchPhotonTorpedoCommand(0, 0, 0, "player1", "token123");
-        cmd.Execute();
-        game.Update();
-
-        var torpedo = game.GetAll().First();
-        Assert.Equal(5.0, torpedo.Position.X, 10);
-    }
-
-    [Fact]
-    public void LaunchCommandThrowsWhenUserIsNull()
-    {
-        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(0, 0, 0, null!, "token"));
-    }
-
-    [Fact]
-    public void LaunchCommandThrowsWhenTokenIsNull()
-    {
-        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(0, 0, 0, "user", null!));
     }
 }

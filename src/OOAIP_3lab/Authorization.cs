@@ -1,23 +1,18 @@
-namespace OOAIP_3lab;
+using OOAIP_3lab.GameObjects;
 
-public interface IAuthorization
-{
-    bool IsAuthorized(string user, string token);
-    void Authenticate(string user, string token);
-}
+namespace OOAIP_3lab;
 
 public class Authorization : IAuthorization
 {
-    public bool IsAuthorized(string user, string token)
+    public bool CanPerform(IGameObject obj, string action)
     {
-        return !string.IsNullOrEmpty(user) && !string.IsNullOrEmpty(token);
-    }
+        ArgumentNullException.ThrowIfNull(obj);
+        ArgumentException.ThrowIfNullOrWhiteSpace(action);
 
-    public void Authenticate(string user, string token)
-    {
-        if (!IsAuthorized(user, token))
+        return action switch
         {
-            throw new UnauthorizedAccessException("Authentication failed");
-        }
+            "LaunchPhotonTorpedo" => true,
+            _ => false
+        };
     }
 }
