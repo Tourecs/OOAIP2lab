@@ -71,9 +71,9 @@ public sealed class VectorTests
     [Fact]
     public void Vector_OperatorEquals_ReturnsTrue_WhenSameReference()
     {
-        var vector2 = vector1;
         var vector1 = new Vector(1, 2);
-        
+        var vector2 = vector1;
+    
         Assert.True(vector1 == vector2);
     }
 
