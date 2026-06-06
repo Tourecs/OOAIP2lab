@@ -67,6 +67,12 @@ public sealed class MyGameTests : IDisposable
         Assert.Equal(5.0, torpedo.Position.X, 10);
     }
 
+    [Fact]
+    public void MyGameThrowsWhenRepositoryIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => new MyGame(null!));
+    }
+
     private class TestObj : IGameObject
     {
         public Guid Id { get; set; } = Guid.NewGuid();

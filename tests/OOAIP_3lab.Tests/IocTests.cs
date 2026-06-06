@@ -100,6 +100,34 @@ public sealed class IocTests : IDisposable
     }
 
     [Fact]
+    public void MoveCommandMovesGameObject()
+    {
+        var obj = new TestGameObject { Position = new Vector(1, 2), Velocity = new Vector(3, 4) };
+        var cmd = new MoveCommand(obj);
+        cmd.Execute();
+
+        Assert.Equal(new Vector(4, 6), obj.Position);
+    }
+
+    [Fact]
+    public void MoveCommandThrowsWhenGameObjectIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => new MoveCommand(null!));
+    }
+
+    [Fact]
+    public void RegisterMoveCommandAndExecuteThroughIoC()
+    {
+        new RegisterIoCDependencyMoveCommand().Execute();
+
+        var obj = new TestGameObject { Position = new Vector(10, 20), Velocity = new Vector(1, 2) };
+        var cmd = Ioc.Resolve<ICommand>("Commands.Move", obj);
+        cmd.Execute();
+
+        Assert.Equal(new Vector(11, 22), obj.Position);
+    }
+
+    [Fact]
     public void ResolveThrowsWhenDependencyNotRegistered()
     {
         Assert.Throws<InvalidOperationException>(() => Ioc.Resolve<object>("Nonexistent"));

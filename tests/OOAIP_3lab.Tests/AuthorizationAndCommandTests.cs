@@ -114,4 +114,16 @@ public sealed class LaunchPhotonTorpedoCommandTests : IDisposable
         var torpedo = game.GetAll().First();
         Assert.Equal(5.0, torpedo.Position.X, 10);
     }
+
+    [Fact]
+    public void LaunchCommandThrowsWhenUserIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(0, 0, 0, null!, "token"));
+    }
+
+    [Fact]
+    public void LaunchCommandThrowsWhenTokenIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => new LaunchPhotonTorpedoCommand(0, 0, 0, "user", null!));
+    }
 }
