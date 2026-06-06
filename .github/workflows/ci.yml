@@ -48,35 +48,36 @@ jobs:
           for sln in ${{ steps.find_sln.outputs.files }}; do
             dotnet build "$sln" --configuration Release --no-restore
           done
-
+      
       - name: Test with coverage
         if: steps.find_sln.outputs.count != '0'
         run: |
-          for sln in ${{ steps.find_sln.outputs.files }}; do
-            dotnet test "$sln" --configuration Release --no-build \
+          set -e
+          mkdir -p coverage
+          for proj in $(find tests -name '*.csproj' -not -path '*/obj/*' -not -path '*/bin/*'); do
+            name=$(basename "$proj" .csproj)
+            echo "Running tests for $proj -> coverage/coverage-$name.xml"
+            dotnet test "$proj" --configuration Release --no-build \
               /p:CollectCoverage=true \
-              /p:CoverletOutputFormat=cobertura \
-              /p:CoverletOutput=../../coverage/ \
-              /p:Threshold=80 \
-              /p:ThresholdType=branch \
-              /p:ThresholdStat=total \
-              /p:MergeWith=../../coverage/coverage.cobertura.xml || true
+              /p:CoverletOutput="$(pwd)/coverage/coverage-$name.xml" \
+              /p:CoverletOutputFormat=cobertura
           done
-
+      
       - name: Install ReportGenerator
         if: steps.find_sln.outputs.count != '0'
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
-
+      
       - name: Generate coverage report
         if: steps.find_sln.outputs.count != '0'
         run: |
-          if [ -f coverage/coverage.cobertura.xml ]; then
+          ls -la coverage || true
+          if ls coverage/*.xml 1> /dev/null 2>&1; then
             reportgenerator \
-              -reports:coverage/coverage.cobertura.xml \
+              -reports:coverage/*.xml \
               -targetdir:coverage/report \
-              -reporttypes:'MarkdownSummaryGithub;JsonSummary;HtmlInline_AzurePipelines'
+              -reporttypes:MarkdownSummaryGithub;JsonSummary;HtmlInline_AzurePipelines
           else
-            echo "No coverage report found at coverage/coverage.cobertura.xml, skipping report generation."
+            echo "No coverage XML files found in coverage/, skipping report generation."
           fi
 
       - name: Publish coverage comment
