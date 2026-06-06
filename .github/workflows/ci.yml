@@ -15,10 +15,16 @@ permissions:
 jobs:
   build-test-coverage:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+          persist-credentials: true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -48,13 +54,16 @@ jobs:
           for sln in ${{ steps.find_sln.outputs.files }}; do
             dotnet build "$sln" --configuration Release --no-restore
           done
-      
+
       - name: Test with coverage
         if: steps.find_sln.outputs.count != '0'
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p coverage
+          found=0
           for proj in $(find tests -name '*.csproj' -not -path '*/obj/*' -not -path '*/bin/*'); do
+            found=1
             name=$(basename "$proj" .csproj)
             echo "Running tests for $proj -> coverage/coverage-$name.xml"
             dotnet test "$proj" --configuration Release --no-build \
@@ -62,13 +71,17 @@ jobs:
               /p:CoverletOutput="$(pwd)/coverage/coverage-$name.xml" \
               /p:CoverletOutputFormat=cobertura
           done
-      
+          if [ "$found" -eq 0 ]; then
+            echo "No test projects found under tests/"
+          fi
+
       - name: Install ReportGenerator
         if: steps.find_sln.outputs.count != '0'
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
-      
+
       - name: Generate coverage report
         if: steps.find_sln.outputs.count != '0'
+        shell: bash
         run: |
           ls -la coverage || true
           if ls coverage/*.xml 1> /dev/null 2>&1; then
