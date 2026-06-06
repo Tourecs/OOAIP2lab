@@ -19,13 +19,9 @@ public sealed class IocTests : IDisposable
     public void RegisterMoveDependencyAllowsResolvingMoveCommand()
     {
         Ioc.Register("Adapters.IMovingObject", _ => Mock.Of<IMovingObject>());
-
         new RegisterIoCDependencyMoveCommand().Execute();
 
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Move",
-            new Dictionary<string, object>()
-        );
+        var command = Ioc.Resolve<ICommand>("Commands.Move", new Dictionary<string, object>());
 
         Assert.IsType<MoveCommand>(command);
     }
@@ -34,13 +30,9 @@ public sealed class IocTests : IDisposable
     public void RegisterRotateDependencyAllowsResolvingRotateCommand()
     {
         Ioc.Register("Adapters.IRotatingObject", _ => Mock.Of<IRotatingObject>());
-
         new RegisterIoCDependencyRotateCommand().Execute();
 
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Rotate",
-            new Dictionary<string, object>()
-        );
+        var command = Ioc.Resolve<ICommand>("Commands.Rotate", new Dictionary<string, object>());
 
         Assert.IsType<RotateCommand>(command);
     }
@@ -48,25 +40,102 @@ public sealed class IocTests : IDisposable
     [Fact]
     public void RegisterMacroDependencyAllowsResolvingMacroCommand()
     {
-        var first = Mock.Of<ICommand>();
-        var second = Mock.Of<ICommand>();
-
         new RegisterIoCDependencyMacroCommand().Execute();
 
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Macro",
-            new[] { first, second }
-        );
+        var command = Ioc.Resolve<ICommand>("Commands.Macro", Array.Empty<ICommand>());
 
         Assert.IsType<MacroCommand>(command);
     }
 
     [Fact]
-    public void ResolveThrowsWhenDependencyIsNotRegistered()
+    public void MacroStrategyResolvesMacroAndExecutesCommands()
+    {
+        var first = new Mock<ICommand>();
+        var second = new Mock<ICommand>();
+
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        Ioc.Register("Specs.Test", _ => new[] { "Commands.First", "Commands.Second" });
+        Ioc.Register("Commands.First", _ => first.Object);
+        Ioc.Register("Commands.Second", _ => second.Object);
+
+        var command = new CreateMacroCommandStrategy("Test").Resolve(Array.Empty<object>());
+
+        command.Execute();
+
+        first.Verify(x => x.Execute(), Times.Once);
+        second.Verify(x => x.Execute(), Times.Once);
+    }
+
+    [Fact]
+    public void MacroStrategyThrowsWhenSpecDoesNotExist()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            new CreateMacroCommandStrategy("Unknown").Resolve(Array.Empty<object>())
+        );
+    }
+
+    [Fact]
+    public void MacroStrategyThrowsWhenCommandDoesNotExist()
+    {
+        Ioc.Register("Specs.Test", _ => new[] { "Commands.Missing" });
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new CreateMacroCommandStrategy("Test").Resolve(Array.Empty<object>())
+        );
+    }
+
+    [Fact]
+    public void Ioc_Resolve_Throws_WhenDependencyIsNotRegistered()
     {
         Assert.Throws<InvalidOperationException>(() =>
             Ioc.Resolve<ICommand>("Unknown.Dependency")
         );
+    }
+
+    [Fact]
+    public void RegisterIoCDependencyMacroCommand_Execute_RegistersDependency_FromParams()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        var first = new Mock<ICommand>();
+        var second = new Mock<ICommand>();
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Macro",
+            first.Object,
+            second.Object
+        );
+
+        command.Execute();
+
+        first.Verify(x => x.Execute(), Times.Once);
+        second.Verify(x => x.Execute(), Times.Once);
+    }
+
+    [Fact]
+    public void RegisterIoCDependencyMacroCommand_Execute_RegistersDependency_FromArray()
+    {
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        var first = new Mock<ICommand>();
+        var second = new Mock<ICommand>();
+
+        var commands = new ICommand[]
+        {
+            first.Object,
+            second.Object
+        };
+
+        var command = Ioc.Resolve<ICommand>(
+            "Commands.Macro",
+            commands
+        );
+
+        command.Execute();
+
+        first.Verify(x => x.Execute(), Times.Once);
+        second.Verify(x => x.Execute(), Times.Once);
     }
 
     [Fact]
@@ -91,32 +160,6 @@ public sealed class IocTests : IDisposable
     }
 
     [Fact]
-    public void RegisterMacroDependencyAllowsResolvingEmptyMacroCommand()
-    {
-        new RegisterIoCDependencyMacroCommand().Execute();
-
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Macro",
-            Array.Empty<ICommand>()
-        );
-
-        Assert.IsType<MacroCommand>(command);
-    }
-
-    [Fact]
-    public void RegisterMacroDependencyThrowsNullReferenceWhenCommandsArgumentIsNull()
-    {
-        new RegisterIoCDependencyMacroCommand().Execute();
-
-        Assert.Throws<NullReferenceException>(() =>
-            Ioc.Resolve<ICommand>(
-                "Commands.Macro",
-                (ICommand[])null!
-            )
-        );
-    }
-
-    [Fact]
     public void RegisterThrowsWhenKeyIsNull()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -129,6 +172,14 @@ public sealed class IocTests : IDisposable
     {
         Assert.Throws<ArgumentException>(() =>
             Ioc.Register("", _ => new object())
+        );
+    }
+
+    [Fact]
+    public void RegisterThrowsWhenKeyIsWhiteSpace()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            Ioc.Register("   ", _ => new object())
         );
     }
 
@@ -147,23 +198,6 @@ public sealed class IocTests : IDisposable
             Ioc.Resolve(null!)
         );
     }
-	
-    [Fact]
-    public void RegisterMacroDependencyAllowsResolvingMacroCommandFromSeparateArguments()
-    {
-        var first = Mock.Of<ICommand>();
-        var second = Mock.Of<ICommand>();
-
-        new RegisterIoCDependencyMacroCommand().Execute();
-
-        var command = Ioc.Resolve<ICommand>(
-            "Commands.Macro",
-            first,
-            second
-        );
-
-        Assert.IsType<MacroCommand>(command);
-    }
 
     [Fact]
     public void ResolveThrowsWhenKeyIsEmpty()
@@ -178,14 +212,6 @@ public sealed class IocTests : IDisposable
     {
         Assert.Throws<ArgumentException>(() =>
             Ioc.Resolve("   ")
-        );
-    }
-
-    [Fact]
-    public void RegisterThrowsWhenKeyIsWhiteSpace()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            Ioc.Register("   ", _ => new object())
         );
     }
 
@@ -214,5 +240,70 @@ public sealed class IocTests : IDisposable
                 new object()
             )
         );
+    }
+
+    [Fact]
+    public void CreateMacroCommandStrategyConstructorThrowsWhenSpecIsNull()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new CreateMacroCommandStrategy(null!)
+        );
+    }
+
+    [Fact]
+    public void CreateMacroCommandStrategyConstructorThrowsWhenSpecIsEmpty()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new CreateMacroCommandStrategy("")
+        );
+    }
+
+    [Fact]
+    public void CreateMacroCommandStrategyConstructorThrowsWhenSpecIsWhiteSpace()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new CreateMacroCommandStrategy("   ")
+        );
+    }
+
+    [Fact]
+    public void MacroStrategyThrowsWhenArgsIsNull()
+    {
+        var strategy = new CreateMacroCommandStrategy("Test");
+
+        Assert.Throws<ArgumentNullException>(() =>
+            strategy.Resolve(null!)
+        );
+    }
+
+    [Fact]
+    public void MacroStrategyPassesArgumentsToInnerCommands()
+    {
+        var gameObject = new object();
+        var first = new Mock<ICommand>();
+        var second = new Mock<ICommand>();
+
+        new RegisterIoCDependencyMacroCommand().Execute();
+
+        Ioc.Register("Specs.Test", _ => new[] { "Commands.First", "Commands.Second" });
+
+        Ioc.Register("Commands.First", args =>
+        {
+            Assert.Same(gameObject, args[0]);
+            return first.Object;
+        });
+
+        Ioc.Register("Commands.Second", args =>
+        {
+            Assert.Same(gameObject, args[0]);
+            return second.Object;
+        });
+
+        var command = new CreateMacroCommandStrategy("Test").Resolve(new[] { gameObject });
+
+        command.Execute();
+
+        first.Verify(x => x.Execute(), Times.Once);
+        second.Verify(x => x.Execute(), Times.Once);
     }
 }
