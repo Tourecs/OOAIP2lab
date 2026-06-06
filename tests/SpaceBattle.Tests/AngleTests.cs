@@ -65,9 +65,10 @@ public sealed class AngleTests
     [Fact]
     public void Angle_OperatorEquals_ReturnsTrue_WhenSameReference()
     {
-        var angle = new Angle(1);
-
-        Assert.True(angle == angle);
+        var angle1 = new Angle(1);
+        var angle2 = angle1;
+    
+        Assert.True(angle1 == angle2);
     }
 
     [Fact]
