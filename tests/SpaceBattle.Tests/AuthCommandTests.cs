@@ -45,7 +45,7 @@ public sealed class AuthCommandTests : IDisposable
     public void AuthCommand_Throws_When_AuthCheck_Not_Registered()
     {
         // Ensure Authorization.Check is not registered
-        try { Ioc.Clear() } catch { }
+        try { Ioc.Clear(); } catch { }
 
         var subjectId = "player1";
         var action = "Move";
