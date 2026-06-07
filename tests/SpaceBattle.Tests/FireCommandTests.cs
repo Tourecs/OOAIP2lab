@@ -137,19 +137,20 @@ public sealed class FireCommandTests : IDisposable
 
 internal class MockMovingObject : IMovingObject
 {
-    public Angle Angle { get; set; }
-    public Angle AngularVelocity { get; }
-
-    public MockRotatingObject(Angle? angle)
+    public Vector Position { get; set; }
+    public Vector Velocity { get; }
+    
+    public MockMovingObject(Vector pos, Vector? vel = null)
     {
-        Angle = angle!; 
-        AngularVelocity = null!;
+        Position = pos;
+        Velocity = vel ?? new Vector(0, 0);
     }
 }
 
 internal class MockRotatingObject : IRotatingObject
 {
     public Angle Angle { get; set; }
-    public Angle AngularVelocity { get; } = null!; 
+    public Angle AngularVelocity { get; } = null!;
+
     public MockRotatingObject(Angle? angle) => Angle = angle!;
 }
