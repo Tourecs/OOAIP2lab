@@ -1,7 +1,7 @@
 using SpaceBattle;
 
 namespace SpaceBattle.Tests;
-
+[Collection("Sequential")]
 public sealed class FireCommandTests : IDisposable
 {
     public FireCommandTests()
