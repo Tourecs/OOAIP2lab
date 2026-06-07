@@ -1,7 +1,6 @@
 using SpaceBattle;
-
-namespace SpaceBattle.Tests;
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
+namespace SpaceBattle.Tests;
 public sealed class GameTests : IDisposable
 {
     private readonly Mock<ICommand> _cmd1;
