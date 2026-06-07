@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'OOAIP_3lab/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: OOAIP_3lab
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore
+      - name: Test with coverage
+        run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage.xml /p:Include="[OOAIP_3lab]*" --no-build
+      - name: Coverage Report
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool 2>/dev/null || true
+          ~/.dotnet/tools/reportgenerator -reports:tests/OOAIP_3lab.Tests/coverage.xml -targetdir:coverage-report -reporttypes:TextSummary
+          cat coverage/report.txt 2>/dev/null || cat coverage-report/Summary.txt 2>/dev/null || echo "No report generated"
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report = '';
+            try { report = fs.readFileSync('OOAIP_3lab/coverage-report/Summary.txt', 'utf8'); } catch(e) {}
+            if (report) {
+              github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '## Coverage Report\n```\n' + report + '\n```'
+              });
+            }

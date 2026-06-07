@@ -1,0 +1,6 @@
+bin/
+obj/
+TestResults/
+*.7z
+coverage.xml
+coverage-report/
