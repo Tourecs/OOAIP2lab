@@ -2,13 +2,17 @@ namespace SpaceBattle;
 
 public class RegisterIoCDependencyGameRegistry : ICommand
 {
+    private static Dictionary<Guid, IDictionary<string, object>> _gameRegistry = new();
+
     public void Execute()
     {
-        // Register the Game.Registry factory
+        // Initialize the shared registry
+        _gameRegistry = new Dictionary<Guid, IDictionary<string, object>>();
+
+        // Register the Game.Registry factory that returns the same instance
         Ioc.Register("Game.Registry", args =>
         {
-            var registry = new Dictionary<Guid, IDictionary<string, object>>();
-            return registry;
+            return _gameRegistry;
         });
 
         // Register Game.Registry.Add command factory
