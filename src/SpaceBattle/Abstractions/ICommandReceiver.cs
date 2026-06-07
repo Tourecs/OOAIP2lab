@@ -1,6 +1,7 @@
-namespace SpaceBattle;
-
-public interface ICommandReceiver
+public class CommandReceiver : ICommandReceiver
 {
-    void Receive(ICommand command);
+    public void Receive(ICommand command)
+    {
+        command.Execute();
+    }
 }
