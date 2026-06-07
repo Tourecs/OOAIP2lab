@@ -150,6 +150,6 @@ internal class MockRotatingObject : IRotatingObject
 internal class MockRotatingObject : IRotatingObject
 {
     public Angle Angle { get; set; }
-    public Angle? AngularVelocity { get; }
+    public Angle AngularVelocity { get; } = null!; 
     public MockRotatingObject(Angle? angle) => Angle = angle!;
 }
