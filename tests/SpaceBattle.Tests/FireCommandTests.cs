@@ -135,7 +135,7 @@ public sealed class FireCommandTests : IDisposable
     }
 }
 
-internal class MockRotatingObject : IRotatingObject
+internal class MockMovingObject : IMovingObject
 {
     public Angle Angle { get; set; }
     public Angle AngularVelocity { get; }
