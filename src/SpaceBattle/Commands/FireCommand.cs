@@ -1,5 +1,3 @@
-using Xunit;
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
 namespace SpaceBattle;
 public sealed class FireCommand : ICommand
 {
