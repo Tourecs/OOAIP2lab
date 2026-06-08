@@ -2,7 +2,7 @@ using Moq;
 using SpaceBattle;
 
 namespace SpaceBattle.Tests;
-
+[Collection("Sequential")]
 public sealed class IocTests : IDisposable
 {
     public IocTests()
