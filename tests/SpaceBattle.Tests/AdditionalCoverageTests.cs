@@ -103,7 +103,9 @@ public sealed class AdditionalCoverageTests : IDisposable
     public void Vector_OperatorInequality_SameVector_ReturnsFalse()
     {
         var v = new Vector(1, 2);
-        Assert.False(v != v);
+        object sameV = v;
+    
+        Assert.False(v != (Vector)sameV);
     }
 
     // === Angle tests ===
