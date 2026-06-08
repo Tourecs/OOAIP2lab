@@ -59,6 +59,13 @@ public sealed class FireCommandTests : IDisposable
             }));
 
         var fireCommand = new FireCommand(ship);
+        
+        var mockRegistryAdd = new Mock<ICommand>(); // или какой тип ожидает ваш IoC
+        mockRegistryAdd.Setup(c => c.Execute()).Verifiable();
+        IoC.Resolve<ICommand>("IoC.Register", "Game.Registry.Add", (object[] args) => mockRegistryAdd.Object).Execute();
+        var mockStartAction = new Mock<ICommand>();
+        IoC.Resolve<ICommand>("IoC.Register", "Actions.Start", (object[] args) => mockStartAction.Object).Execute();
+        
         fireCommand.Execute();
 
         Assert.True(startCalled);
