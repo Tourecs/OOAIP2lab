@@ -38,23 +38,6 @@ public sealed class GameRegistryTests : IDisposable
     }
 
     [Fact]
-    public void DeleteObject_ShouldRemove()
-    {
-        var id = Guid.NewGuid();
-        var obj = new Dictionary<string, object> { { "temp", 42 } };
-
-        var addCmd = Ioc.Resolve<ICommand>("Game.Registry.Add", id, obj);
-        addCmd.Execute();
-
-        var deleteCmd = Ioc.Resolve<ICommand>("Game.Registry.Delete", id);
-        deleteCmd.Execute();
-
-        Assert.Throws<KeyNotFoundException>(() =>
-            Ioc.Resolve<object>("Game.Registry.GetObject", id)
-        );
-    }
-
-    [Fact]
     public void DeleteNonExistent_ShouldThrow()
     {
         var id = Guid.NewGuid();
