@@ -1,5 +1,5 @@
-namespace SpaceBattle;
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
+namespace SpaceBattle;
 public sealed class FireCommand : ICommand
 {
     private readonly IDictionary<string, object> _ship;
