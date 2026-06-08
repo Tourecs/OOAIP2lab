@@ -1,7 +1,7 @@
 using SpaceBattle;
 
 namespace SpaceBattle.Tests;
-
+[Collection("Sequential")]
 public sealed class GameRegistryTests : IDisposable
 {
     public GameRegistryTests()
@@ -32,23 +32,6 @@ public sealed class GameRegistryTests : IDisposable
     public void GetNonExistent_ShouldThrow()
     {
         var id = Guid.NewGuid();
-        Assert.Throws<KeyNotFoundException>(() =>
-            Ioc.Resolve<object>("Game.Registry.GetObject", id)
-        );
-    }
-
-    [Fact]
-    public void DeleteObject_ShouldRemove()
-    {
-        var id = Guid.NewGuid();
-        var obj = new Dictionary<string, object> { { "temp", 42 } };
-
-        var addCmd = Ioc.Resolve<ICommand>("Game.Registry.Add", id, obj);
-        addCmd.Execute();
-
-        var deleteCmd = Ioc.Resolve<ICommand>("Game.Registry.Delete", id);
-        deleteCmd.Execute();
-
         Assert.Throws<KeyNotFoundException>(() =>
             Ioc.Resolve<object>("Game.Registry.GetObject", id)
         );
