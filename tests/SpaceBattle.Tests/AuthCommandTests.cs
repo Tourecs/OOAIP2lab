@@ -1,8 +1,8 @@
 using Xunit;
 using System;
-using SpaceBattle.Lib.Command;
+using SpaceBattle; // Используем корневой namespace проекта
 
-namespace SpaceBattle.Tests.CommandTests;
+namespace SpaceBattle.Tests; // Изменили на стандартный, чтобы убрать ошибку CS0101
 
 public class AuthCommandTests
 {
@@ -57,7 +57,6 @@ public class AuthCommandTests
         var authCommand = new AuthCommand(subjectId, action, objectId);
         
         // Так как зависимость не зарегистрирована, Ioc.Resolve выбросит исключение.
-        // Это заменяет некорректный тест с ушедшим методом Unregister.
         Assert.Throws<Exception>(() => authCommand.Execute());
     }
 
