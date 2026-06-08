@@ -56,8 +56,8 @@ public class AuthCommandTests
         var objectId = "ship1";
         var authCommand = new AuthCommand(subjectId, action, objectId);
         
-        // Так как зависимость не зарегистрирована, Ioc.Resolve выбросит исключение.
-        Assert.Throws<Exception>(() => authCommand.Execute());
+        // МЕНЯЕМ Exception НА InvalidOperationException
+        Assert.Throws<InvalidOperationException>(() => authCommand.Execute());
     }
 
     [Fact]
