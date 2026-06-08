@@ -139,6 +139,7 @@ internal class MockMovingObject : IMovingObject
 {
     public Vector Position { get; set; }
     public Vector Velocity { get; }
+    
     public MockMovingObject(Vector pos, Vector? vel = null)
     {
         Position = pos;
@@ -148,7 +149,8 @@ internal class MockMovingObject : IMovingObject
 
 internal class MockRotatingObject : IRotatingObject
 {
-    public Angle? Angle { get; set; }
-    public Angle? AngularVelocity { get; }
-    public MockRotatingObject(Angle? angle) => Angle = angle;
+    public Angle Angle { get; set; }
+    public Angle AngularVelocity { get; } = null!;
+
+    public MockRotatingObject(Angle? angle) => Angle = angle!;
 }
